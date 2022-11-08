@@ -19,6 +19,7 @@ const connectToDataBase = async (url: string) => {
         return ret;
       },
     });
+    debug(chalk.blue.bold("Connected to the data base!"));
   } catch {
     debug(chalk.red("Error connecting to data base!!"));
   }
