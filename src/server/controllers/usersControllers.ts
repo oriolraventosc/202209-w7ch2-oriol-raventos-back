@@ -13,37 +13,39 @@ export const userLogin = async (
   next: NextFunction
 ) => {
   const { username, password } = req.body as Credentials;
+  try {
+    const user = await User.findOne({ username });
+    if (!user) {
+      const customError = new CustomError(
+        "Your username is not found!",
+        401,
+        "Wrong username!"
+      );
+      next(customError);
+      return;
+    }
 
-  const user = await User.findOne({ username });
+    if (!(await bcrypt.compare(password, user.password))) {
+      const customError = new CustomError(
+        "Your password is not found!",
+        401,
+        "Wrong password!"
+      );
+      next(customError);
+      return;
+    }
 
-  if (!user) {
-    const customError = new CustomError(
-      "Your user is not registered!",
-      401,
-      "Error logging! Please register first!"
-    );
-    next(customError);
-    return;
+    const tokenPayload: UserTokenPayload = {
+      id: user._id.toString(),
+      username,
+    };
+
+    const token = jsw.sign(tokenPayload, process.env.JWT_SECRET_KEY, {
+      expiresIn: "3d",
+    });
+
+    res.status(200).json({ accessToken: token });
+  } catch (error: unknown) {
+    next(error);
   }
-
-  if (!(await bcrypt.compare(password, user.password))) {
-    const customError = new CustomError(
-      "Your user is not registered!",
-      401,
-      "Error logging! Please register first!"
-    );
-    next(customError);
-    return;
-  }
-
-  const tokenPayload: UserTokenPayload = {
-    id: user._id.toString(),
-    username,
-  };
-
-  const token = jsw.sign(tokenPayload, process.env.SECRET_WORD, {
-    expiresIn: "3d",
-  });
-
-  res.status(200).json({ accessToken: token });
 };
