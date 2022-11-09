@@ -1,4 +1,5 @@
 import "../../loadEnvironments";
+import bcrypt from "bcryptjs";
 import jsw from "jsonwebtoken";
 import type { Response, Request, NextFunction } from "express";
 import { userLogin } from "./usersControllers";
@@ -11,7 +12,10 @@ beforeEach(() => {
 });
 
 const next = jest.fn();
-const token = jsw.sign({}, process.env.JWT_SECRET_KEY);
+
+const tokenPayload = {};
+
+const token = jsw.sign(tokenPayload, process.env.JWT_SECRET_KEY);
 
 const res: Partial<Response> = {
   status: jest.fn().mockReturnThis(),
@@ -29,10 +33,11 @@ describe("Given a userLogin controller", () => {
 
       User.findOne = jest.fn().mockResolvedValue(mockUsersData);
       jsw.sign = jest.fn().mockReturnValueOnce(token);
+      bcrypt.compare = jest.fn().mockReturnValueOnce(true);
 
       await userLogin(req as Request, res as Response, next as NextFunction);
 
-      expect(res.status).toHaveBeenLastCalledWith(status);
+      expect(res.status).toHaveBeenCalledWith(status);
     });
 
     test("Then it should call it's method json with the user token", async () => {
@@ -41,9 +46,12 @@ describe("Given a userLogin controller", () => {
       };
 
       User.findOne = jest.fn().mockResolvedValue(mockUsersData);
+      jsw.sign = jest.fn().mockReturnValueOnce(token);
+      bcrypt.compare = jest.fn().mockReturnValueOnce(true);
+
       await userLogin(req as Request, res as Response, next as NextFunction);
 
-      expect(res.json).toHaveBeenCalledWith({ token });
+      expect(res.json).toHaveBeenCalledWith({ accessToken: token });
     });
   });
 
