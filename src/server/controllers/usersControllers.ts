@@ -5,7 +5,6 @@ import bcrypt from "bcryptjs";
 import { User } from "../../database/models/User.js";
 import CustomError from "../customError/customError.js";
 import type { Credentials } from "../types.js";
-import type { UserTokenPayload } from "../types.js";
 
 export const userLogin = async (
   req: Request,
@@ -15,6 +14,7 @@ export const userLogin = async (
   const { username, password } = req.body as Credentials;
   try {
     const user = await User.findOne({ username });
+
     if (!user) {
       const customError = new CustomError(
         "Your username is not found!",
@@ -35,12 +35,7 @@ export const userLogin = async (
       return;
     }
 
-    const tokenPayload: UserTokenPayload = {
-      id: user._id.toString(),
-      username,
-    };
-
-    const token = jsw.sign(tokenPayload, enviroment.jwtSecretKey, {
+    const token = jsw.sign((user._id, username), enviroment.jwtSecretKey, {
       expiresIn: "3d",
     });
 
